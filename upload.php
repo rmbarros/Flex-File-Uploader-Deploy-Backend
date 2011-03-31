@@ -2,7 +2,7 @@
 
 $errors = array();
 $data = "";
-$success = "false";
+$success = "true";
 
 function return_result($success,$errors,$data) {
 	echo("<?xml version=\"1.0\" encoding=\"utf-8\"?>");	
