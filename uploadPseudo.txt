@@ -1,0 +1,109 @@
+	
+putUser :: posted json string example ($_POST["data"]) :
+	
+	{
+		"method":"putUser",
+		"user":{
+				"name":"myName",
+				"email":"myEmaiil@email.com"
+			}, 
+		"filesMetaData":[
+				{"name":"file1", "size":67000},
+				{"name":"file2", "size":54000},
+				{"name":"file3", "size":37000}
+			]
+		}
+		
+		
+putFile :: $_FILES && $_POST["userid"]
+		
+		
+
+var maxFiles = 5
+		
+switch(postedData.method) {
+
+	case "putUser":
+	
+			var postedData = json($_POST['data'])
+			var user = postedData.user
+			
+			var filesMetaData = postedData.filesMetaData
+			
+			
+			var userid = db.userExists(user.email) or db.error response {status:ERROR}
+			
+			if	userid != null
+				var files = db.getUserFiles(userid) or db.error response {status:ERROR}
+				
+				if files.count < maxFiles
+					var allowedFiles
+						foreach files
+							foreach filesMetaData
+								if files[i].originalName == filesMetaData[j].name
+									allowedFiles.push(filesMetaData[j])
+									
+					
+					response {userId:userid, filesCount:files.count, allowedFiles:allowedFiles.toString(),  status:OK}
+				else
+					response {userId:userid, filesCount:files.count, status:DENIED}
+					
+			else
+				userid = db.inserUser(user)
+				if userid != null 
+					response {userId:userid, filesCount:0, status:OK}
+				else
+					response {status:ERROR}
+				
+		break;	
+			
+		
+		case "putFile":
+		
+			var userid = $_POST['userid']
+			var sentFiles = $_FILES ;
+			var dbuserid = db.userExists(user.email) or db.error response {status:ERROR}
+			
+			if	userid == null
+				response {userId:null, status:DENIED}
+			else
+				var files = db.getUserFiles(userid) or db.error response {status:ERROR}
+				
+				var newFiles
+				var exists
+				
+				foreach sentFiles
+					
+					exists = false
+					
+					foreach files
+						if files[j].originalName == sentFiles[i].name
+							
+							exists = true
+							var name = userid+files[i].id+timestamp
+							db.updateFile(files[i].id, name, timestamp) or db.error response {status:ERROR}
+							db.insertFileUpdate(files[i].id, timestamp)
+							
+							writeFile(name) or fs.error response {status:ERROR}
+							
+							
+					if not exists	
+						newFiles.push(sentFiles[i])
+			
+					
+				if 	newFiles.count <= 	maxFiles - files.count
+					var fileid
+					var name 
+					
+					foreach newFiles
+						fileid = db.insertFile(userid, sentFiles[i].name) db.error response {status:ERROR}
+						name = userid+fileid+timestamp
+						db.updateFile(fileid, name) db.error response {status:ERROR}
+						
+						writeFile(name) or fs.error response {status:ERROR}
+						
+				else
+					response {userId:userid, deniedFiles:newFiles, status:DENIED}
+				
+						
+		break;	
